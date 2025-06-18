@@ -193,13 +193,34 @@ def parse_project_input(project_input):
     words = project_input.split()
     if len(words) >= 2:
         # Look for keywords that might indicate project name
-        project_keywords = ['project', 'mine', 'deposit', 'prospect', 'operation']
+        project_keywords = ['project', 'mine', 'deposit', 'prospect', 'operation', 'hill', 'pit', 'field']
         
         for i, word in enumerate(words):
             if word.lower() in project_keywords:
-                company = ' '.join(words[:i]).strip()
-                project = ' '.join(words[i:]).strip()
-                if company and project:
+                if i > 0:  # Make sure there's a company name before the keyword
+                    company = ' '.join(words[:i]).strip()
+                    project = ' '.join(words[i:]).strip()
+                    if company and project:
+                        return company, project
+        
+        # Special handling for common patterns like "Company Name Location"
+        # If last word looks like a location/project name, split there
+        if len(words) >= 2:
+            # Check if last 1-2 words might be project name
+            potential_project_words = ['hill', 'creek', 'mine', 'pit', 'deposit', 'prospect']
+            last_word = words[-1].lower()
+            
+            if any(keyword in last_word for keyword in potential_project_words):
+                company = ' '.join(words[:-1]).strip()
+                project = words[-1].strip()
+                return company, project
+            
+            # Check last 2 words
+            if len(words) >= 3:
+                last_two = ' '.join(words[-2:]).lower()
+                if any(keyword in last_two for keyword in potential_project_words):
+                    company = ' '.join(words[:-2]).strip()
+                    project = ' '.join(words[-2:]).strip()
                     return company, project
         
         # Default: split in half
@@ -213,90 +234,98 @@ def parse_project_input(project_input):
 
 def get_location_info(company_name, project_name):
     """Research step 1: Get project location"""
-    query = f"{company_name} {project_name} mining project location Australia state"
+    query = f'"{company_name}" "{project_name}" location "Western Australia" OR "WA" OR "Queensland" OR "NSW" state'
     results = search_web_info(query)
     
     return {
         'query': query,
         'results': results,
-        'location': 'Location to be extracted from search results'
+        'location': 'Location to be extracted from search results',
+        'step': 'Project Location'
     }
 
 def get_coordinates(company_name, project_name):
     """Research step 2: Get longitude and latitude"""
-    query = f"{company_name} {project_name} mining coordinates latitude longitude GPS"
+    query = f'"{company_name}" "{project_name}" coordinates latitude longitude GPS mining location'
     results = search_web_info(query)
     
     return {
         'query': query,
         'results': results,
-        'coordinates': 'Coordinates to be extracted from search results'
+        'coordinates': 'Coordinates to be extracted from search results',
+        'step': 'Geographic Coordinates'
     }
 
 def get_commodity_info(company_name, project_name):
     """Research step 3: Get commodity information"""
-    query = f"{company_name} {project_name} commodity gold copper iron ore lithium mineral"
+    query = f'"{company_name}" "{project_name}" gold copper iron ore lithium mineral commodity type'
     results = search_web_info(query)
     
     return {
         'query': query,
         'results': results,
-        'commodity': 'Commodity to be extracted from search results'
+        'commodity': 'Commodity to be extracted from search results',
+        'step': 'Commodity Information'
     }
 
 def get_drilling_status(company_name, project_name):
     """Research step 4: Check diamond drilling completion"""
-    query = f"{company_name} {project_name} diamond drilling completed reverse circulation drilling program"
+    query = f'"{company_name}" "{project_name}" diamond drilling completed reverse circulation RC drilling program'
     results = search_web_info(query)
     
     return {
         'query': query,
         'results': results,
-        'drilling_status': 'Drilling status to be extracted from search results'
+        'drilling_status': 'Drilling status to be extracted from search results',
+        'step': 'Diamond Drilling Status'
     }
 
 def get_project_stage(company_name, project_name):
     """Research step 5: Get project development stage"""
-    query = f"{company_name} {project_name} exploration scoping study PFS DFS feasibility development stage"
+    query = f'"{company_name}" "{project_name}" exploration scoping study PFS DFS feasibility development stage'
     results = search_web_info(query)
     
     return {
         'query': query,
         'results': results,
-        'project_stage': 'Project stage to be extracted from search results'
+        'project_stage': 'Project stage to be extracted from search results',
+        'step': 'Project Development Stage'
     }
 
 def get_resource_data(company_name, project_name):
     """Research step 6: Get resource size and grade"""
-    query = f"{company_name} {project_name} resource estimate tonnage grade ounces Mt Moz JORC"
+    query = f'"{company_name}" "{project_name}" resource estimate tonnage grade ounces Mt Moz JORC mineral resource'
     results = search_web_info(query)
     
     return {
         'query': query,
         'results': results,
-        'resource_data': 'Resource data to be extracted from search results (e.g., 118.7Mt @ 0.53g/t Au for 2 Moz)'
+        'resource_data': 'Resource data to be extracted from search results (e.g., 118.7Mt @ 0.53g/t Au for 2 Moz)',
+        'step': 'Resource Size and Grade'
     }
 
 def get_ore_competency(company_name, project_name):
     """Research step 7: Get ore competency data"""
-    query = f"{company_name} {project_name} ore competency UCS BWI AxB hardness strength bond work index"
+    query = f'"{company_name}" "{project_name}" ore competency UCS BWI "bond work index" hardness strength crushing'
     results = search_web_info(query)
     
     return {
         'query': query,
         'results': results,
-        'ore_competency': 'Ore competency data to be extracted from search results'
+        'ore_competency': 'Ore competency data to be extracted from search results',
+        'step': 'Ore Competency'
     }
 
 def get_process_flowsheet(company_name, project_name):
     """Research step 8: Get process flowsheet and HPGR information"""
-    query = f"{company_name} {project_name} process flowsheet HPGR high pressure grinding rolls comminution"
+    query = f'"{company_name}" "{project_name}" process flowsheet HPGR "high pressure grinding" comminution processing'
     results = search_web_info(query)
     
     return {
         'query': query,
         'results': results,
-        'process_info': 'Process information to be extracted from search results'
+        'process_info': 'Process information to be extracted from search results',
+        'step': 'Process Flowsheet & HPGR'
     }
 
 def display_search_results(results):
@@ -308,9 +337,34 @@ def display_search_results(results):
     if "results" in results and results["results"]:
         st.markdown("**Search Results:**")
         for i, result in enumerate(results["results"], 1):
-            with st.expander(f"{i}. {result['title']}", expanded=False):
+            with st.expander(f"{i}. {result['title'][:80]}{'...' if len(result['title']) > 80 else ''}", expanded=i==1):
                 st.write(f"**Link:** {result['link']}")
-                st.write(f"**Summary:** {result['snippet']}")
+                if result['snippet']:
+                    st.write(f"**Summary:** {result['snippet']}")
+                else:
+                    st.write("**Summary:** No summary available")
+                
+                # Extract key information hints
+                snippet_lower = result['snippet'].lower() if result['snippet'] else ""
+                title_lower = result['title'].lower()
+                
+                # Look for specific information in the text
+                info_found = []
+                if any(word in snippet_lower + title_lower for word in ['location', 'western australia', 'wa', 'perth', 'state']):
+                    info_found.append("📍 Location info")
+                if any(word in snippet_lower + title_lower for word in ['latitude', 'longitude', 'coordinates', 'gps']):
+                    info_found.append("🗺️ Coordinates")
+                if any(word in snippet_lower + title_lower for word in ['gold', 'copper', 'iron', 'lithium', 'commodity']):
+                    info_found.append("⚡ Commodity info")
+                if any(word in snippet_lower + title_lower for word in ['drilling', 'diamond', 'rc', 'metres']):
+                    info_found.append("🔨 Drilling info")
+                if any(word in snippet_lower + title_lower for word in ['resource', 'moz', 'mt', 'grade', 'tonnage']):
+                    info_found.append("📊 Resource data")
+                if any(word in snippet_lower + title_lower for word in ['pfs', 'dfs', 'feasibility', 'scoping', 'exploration']):
+                    info_found.append("📈 Development stage")
+                
+                if info_found:
+                    st.write(f"**Relevant info:** {' | '.join(info_found)}")
     else:
         st.warning("No search results found.")
 
@@ -327,12 +381,12 @@ def main():
     # Single input box for project information
     project_input = st.text_input(
         "Enter Project Information", 
-        placeholder="e.g., Saturn Metals - Apollo Hill Project  or  BHP - Olympic Dam Mine",
-        help="Enter the company name and project name. Use formats like 'Company - Project' or 'Company | Project'"
+        placeholder="e.g., Saturn Metals Apollo Hill  or  BHP Olympic Dam  or  Newcrest Cadia",
+        help="Enter the company name and project name. Examples: 'Saturn Metals Apollo Hill', 'BHP Olympic Dam', 'Newcrest Cadia'"
     )
     
     if not project_input:
-        st.markdown('<div class="info-box">💡 Please enter project information in the format: "Company Name - Project Name" to proceed with research.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="info-box">💡 Please enter project information. Examples:<br/>• Saturn Metals Apollo Hill<br/>• BHP Olympic Dam<br/>• Newcrest Cadia East<br/>• Rio Tinto Pilbara</div>', unsafe_allow_html=True)
         return
     
     # Parse the input
@@ -344,6 +398,10 @@ def main():
         st.write(f"**Company:** {company_name}")
     with col2:
         st.write(f"**Project:** {project_name}")
+    
+    # Show parsing suggestion if it looks wrong
+    if project_name.lower() in ['project', 'mine', 'operation'] or len(project_name.split()) < 2:
+        st.markdown('<div class="warning-box">⚠️ The project name parsing might be incorrect. Please adjust below if needed.</div>', unsafe_allow_html=True)
     
     # Option to manually adjust if parsing is incorrect
     with st.expander("✏️ Adjust company/project names if needed"):
@@ -453,8 +511,65 @@ def main():
             if step['key'] in st.session_state.research_data:
                 result = st.session_state.research_data[step['key']]
                 st.markdown('<div class="success-box">', unsafe_allow_html=True)
+                st.write(f"**✅ {result.get('step', step['title'])} - Completed**")
                 st.write("**Query Used:**", result['query'])
                 display_search_results(result['results'])
+                
+                # Add manual input field for extracted information
+                with st.expander("📝 Extract and record key information"):
+                    key_info_key = f"{step['key']}_extracted"
+                    current_info = st.session_state.research_data.get(key_info_key, "")
+                    
+                    if step['key'] == 'location':
+                        extracted_info = st.text_area("Location found:", 
+                                                    value=current_info,
+                                                    placeholder="e.g., Western Australia, Yilgarn Craton",
+                                                    key=f"extract_{step['key']}")
+                    elif step['key'] == 'coordinates':
+                        extracted_info = st.text_area("Coordinates found:", 
+                                                    value=current_info,
+                                                    placeholder="e.g., Latitude: -31.234, Longitude: 121.567",
+                                                    key=f"extract_{step['key']}")
+                    elif step['key'] == 'commodity':
+                        extracted_info = st.text_area("Commodity found:", 
+                                                    value=current_info,
+                                                    placeholder="e.g., Gold, Copper, Iron Ore",
+                                                    key=f"extract_{step['key']}")
+                    elif step['key'] == 'drilling':
+                        extracted_info = st.text_area("Drilling status found:", 
+                                                    value=current_info,
+                                                    placeholder="e.g., Diamond drilling completed - 50 holes, 15,000m",
+                                                    key=f"extract_{step['key']}")
+                    elif step['key'] == 'stage':
+                        extracted_info = st.text_area("Development stage found:", 
+                                                    value=current_info,
+                                                    placeholder="e.g., Pre-Feasibility Study (PFS) completed",
+                                                    key=f"extract_{step['key']}")
+                    elif step['key'] == 'resources':
+                        extracted_info = st.text_area("Resource estimate found:", 
+                                                    value=current_info,
+                                                    placeholder="e.g., 118.7Mt @ 0.53g/t Au for 2.02 Moz",
+                                                    key=f"extract_{step['key']}")
+                    elif step['key'] == 'competency':
+                        extracted_info = st.text_area("Ore competency found:", 
+                                                    value=current_info,
+                                                    placeholder="e.g., UCS: 150 MPa, BWI: 15 kWh/t",
+                                                    key=f"extract_{step['key']}")
+                    elif step['key'] == 'process':
+                        extracted_info = st.text_area("Process information found:", 
+                                                    value=current_info,
+                                                    placeholder="e.g., Conventional crushing, grinding, CIL circuit",
+                                                    key=f"extract_{step['key']}")
+                    else:
+                        extracted_info = st.text_area("Information found:", 
+                                                    value=current_info,
+                                                    key=f"extract_{step['key']}")
+                    
+                    if st.button(f"Save extracted info", key=f"save_{step['key']}"):
+                        st.session_state.research_data[key_info_key] = extracted_info
+                        st.success("Information saved!")
+                        st.rerun()
+                
                 st.markdown('</div>', unsafe_allow_html=True)
         
         st.divider()
